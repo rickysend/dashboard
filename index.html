@@ -520,13 +520,91 @@
     filter: none;
   }
 
-  /* ===== Narrow screens: everything stacks in one column ===== */
+  /* ===== Narrow screens: single column + smaller components ===== */
   @media (max-width: 700px) {
+    body {
+      padding: 1.25rem 0.75rem;
+    }
     main {
       grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    .card {
+      padding: 1.1rem;
+    }
+    header.card {
+      padding: 1.5rem 1rem;
+    }
+    .weather-card {
+      padding: 1rem;
     }
     #clock {
-      font-size: 3rem;
+      font-size: 2.75rem;
+    }
+    #date {
+      font-size: 1.15rem;
+    }
+    #weather-temp {
+      font-size: 2.5rem;
+    }
+    #weather-icon {
+      font-size: 2rem;
+    }
+    .home-bar {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+  }
+
+  /* ===== Phones: extra-small tuning ===== */
+  @media (max-width: 480px) {
+    body {
+      padding: 1rem 0.5rem;
+    }
+    .card {
+      padding: 0.9rem;
+      border-radius: 12px;
+    }
+    header.card {
+      padding: 1.25rem 0.75rem;
+    }
+    #clock {
+      font-size: 2.25rem;
+    }
+    #date {
+      font-size: 1rem;
+    }
+    #weather-temp {
+      font-size: 2rem;
+    }
+    #weather-icon {
+      font-size: 1.75rem;
+    }
+    #weather-location {
+      font-size: 0.85rem;
+    }
+    #weather-desc {
+      font-size: 1rem;
+    }
+    #todo-input,
+    #notes,
+    .music-form input {
+      font-size: 1rem;
+    }
+    #todo-list label {
+      font-size: 1rem;
+    }
+    #links-list {
+      grid-template-columns: 1fr;
+    }
+    .music-list img {
+      width: 96px;
+      height: 72px;
+    }
+    .music-title {
+      font-size: 0.8rem;
     }
   }
 </style>
