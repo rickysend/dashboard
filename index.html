@@ -784,37 +784,13 @@
       </div>
     </section>
 
-    <!-- 0. PET — a little companion -->
-    <section class="card pet-card" aria-labelledby="pet-title">
-      <h2 id="pet-title" class="visually-hidden">Pet</h2>
-      <div class="pet-stage" id="pet-stage" role="button" tabindex="0" aria-label="Pet the cat">
-        <span class="pet-emoji" id="pet-emoji">🐱</span>
-      </div>
-      <p class="pet-status" id="pet-status">Click to pet!</p>
-      <div class="pet-bar"><div class="pet-bar-fill" id="pet-bar-fill" style="width:50%"></div></div>
-      <p class="pet-count" id="pet-count">Pets: 0</p>
-    </section>
-
-    <!-- 1. CHAT — local, just for you -->
-    <section class="card chat-card" aria-labelledby="chat-title">
-      <h2 id="chat-title">Chat</h2>
-      <div id="chat-messages" class="chat-messages">
-        <span class="chat-msg"><span class="chat-tag">system</span>This is your local chat — messages stay on this browser only.</span>
-      </div>
-      <form id="chat-form" class="chat-form">
-        <label for="chat-input" class="visually-hidden">Message</label>
-        <input id="chat-input" type="text" placeholder="Write yourself a note…" autocomplete="off">
-        <button type="submit">Send</button>
-      </form>
-    </section>
-
-    <!-- 2. CLOCK -->
+    <!-- 1. CLOCK — today's time and date -->
     <header class="card">
       <time id="clock">--:--:--</time>
       <p id="date"></p>
     </header>
 
-    <!-- WEATHER -->
+    <!-- 2. WEATHER — today's weather -->
     <section class="card weather-card">
       <h2 class="visually-hidden">Weather</h2>
       <p id="weather-location">Locating…</p>
@@ -834,7 +810,7 @@
       <button id="city-toggle" type="button" class="city-toggle">Set city</button>
     </section>
 
-    <!-- 2. TO-DOS -->
+    <!-- 3. TO-DOS — today's tasks -->
     <section class="card" aria-labelledby="todos-title">
       <h2 id="todos-title">To-dos</h2>
       <form id="todo-form">
@@ -845,20 +821,44 @@
       <ul id="todo-list"></ul>
     </section>
 
-    <!-- 3. LINKS -->
-    <section class="card" aria-labelledby="links-title">
-      <h2 id="links-title">Links</h2>
-      <ul id="links-list"></ul>
-    </section>
-
-    <!-- 4. NOTES -->
+    <!-- 4. NOTES — today's notes -->
     <section class="card notes-card" aria-labelledby="notes-title">
       <h2 id="notes-title">Notes</h2>
       <label for="notes" class="visually-hidden">Notes</label>
       <textarea id="notes" placeholder="Type anything…"></textarea>
     </section>
 
-    <!-- 5. MUSIC -->
+    <!-- 5. PET — a little companion (secondary) -->
+    <section class="card pet-card" aria-labelledby="pet-title">
+      <h2 id="pet-title" class="visually-hidden">Pet</h2>
+      <div class="pet-stage" id="pet-stage" role="button" tabindex="0" aria-label="Pet the cat">
+        <span class="pet-emoji" id="pet-emoji">🐱</span>
+      </div>
+      <p class="pet-status" id="pet-status">Click to pet!</p>
+      <div class="pet-bar"><div class="pet-bar-fill" id="pet-bar-fill" style="width:50%"></div></div>
+      <p class="pet-count" id="pet-count">Pets: 0</p>
+    </section>
+
+    <!-- 6. CHAT — local, just for you (secondary) -->
+    <section class="card chat-card" aria-labelledby="chat-title">
+      <h2 id="chat-title">Chat</h2>
+      <div id="chat-messages" class="chat-messages">
+        <span class="chat-msg"><span class="chat-tag">system</span>This is your local chat — messages stay on this browser only.</span>
+      </div>
+      <form id="chat-form" class="chat-form">
+        <label for="chat-input" class="visually-hidden">Message</label>
+        <input id="chat-input" type="text" placeholder="Write yourself a note…" autocomplete="off">
+        <button type="submit">Send</button>
+      </form>
+    </section>
+
+    <!-- 7. LINKS — quick bookmarks (secondary) -->
+    <section class="card" aria-labelledby="links-title">
+      <h2 id="links-title">Links</h2>
+      <ul id="links-list"></ul>
+    </section>
+
+    <!-- 8. MUSIC — YouTube queue (secondary) -->
     <section class="card music-card" aria-labelledby="music-title">
       <h2 id="music-title">Music</h2>
       <form id="music-form" class="music-form">
