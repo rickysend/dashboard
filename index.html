@@ -1110,14 +1110,16 @@ function onLocationFound(position) {
 
 function onLocationFailed(error) {
   if (error && error.code === 1) {
-    weatherUnavailable("Location is blocked. Click the icon in the address bar to allow it, or set a city, ZIP, or coordinates below.");
+    weatherUnavailable("Location is blocked. Click the lock icon in the address bar to allow it, or set a city below.");
   } else if (error && error.code === 2) {
-    weatherUnavailable("Couldn't get a GPS fix. Check Windows location settings, or set a city, ZIP, or coordinates below.");
+    weatherUnavailable("Couldn't get a GPS fix. Set a city, ZIP, or coordinates below.");
   } else {
-    weatherUnavailable("Location is off or timed out. Check Windows location settings, or set a city, ZIP, or coordinates below.");
+    weatherUnavailable("Location is off or timed out. Set a city, ZIP, or coordinates below.");
   }
+  /* Show the recovery form immediately so the user has a clear next action. */
   cityFormEl.hidden = false;
   cityToggleEl.hidden = true;
+  cityInputEl.focus();
 }
 
 /* ============ 6. MANUAL CITY — fallback when geolocation is unavailable ============ */
@@ -1293,7 +1295,7 @@ function renderMusic() {
   if (musicQueue.length === 0) {
     const empty = document.createElement("li");
     empty.className = "empty";
-    empty.textContent = "Paste a YouTube link to start your queue.";
+    empty.textContent = "No music yet — paste a YouTube link above to start your queue.";
     musicListEl.appendChild(empty);
     musicPrevBtn.disabled = musicNextBtn.disabled = true;
     updateMusicBar();
