@@ -21,6 +21,10 @@
     padding: 0;
   }
 
+  [hidden] {
+    display: none !important;
+  }
+
   body {
     background: var(--bg);
     color: var(--text);
@@ -145,6 +149,24 @@
   .city-toggle:hover {
     color: var(--accent);
     filter: none;
+  }
+
+  .city-pick {
+    display: block;
+    margin: 0.75rem auto 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.6rem 0.9rem;
+    font-size: 1rem;
+    color: var(--text);
+    max-width: 320px;
+    width: 100%;
+  }
+
+  .city-pick:focus {
+    outline: none;
+    border-color: var(--accent);
   }
 
   /* ===== Section titles ===== */
@@ -347,6 +369,9 @@
         <input id="city-input" type="text" placeholder="City, e.g. New York" autocomplete="off">
         <button type="submit">Set</button>
       </form>
+      <select id="city-pick" class="city-pick" hidden>
+        <option value="">Choose your city…</option>
+      </select>
       <button id="city-toggle" type="button" class="city-toggle">Set city</button>
     </section>
 
@@ -610,6 +635,8 @@ const CITY_KEY = "dashboard.city";
 const cityFormEl = document.getElementById("city-form");
 const cityInputEl = document.getElementById("city-input");
 const cityToggleEl = document.getElementById("city-toggle");
+const cityPickEl = document.getElementById("city-pick");
+let cityResults = [];
 
 function onCitySet(placeName) {
   cityFormEl.hidden = true;
@@ -617,19 +644,60 @@ function onCitySet(placeName) {
   cityToggleEl.textContent = "Change city";
 }
 
+/* One friendly label per place, e.g. "Springfield, Illinois, United States" */
+function placeLabel(place) {
+  let label = place.name;
+  if (place.admin1) label += ", " + place.admin1;
+  if (place.country && place.country !== place.admin1) label += ", " + place.country;
+  return label;
+}
+
+/* Show and remember the weather for one specific place. */
+async function applyCity(place) {
+  const placeName = placeLabel(place);
+  await showWeather(place.latitude, place.longitude, placeName);
+  localStorage.setItem(CITY_KEY, JSON.stringify({
+    name: placeName,
+    lat: place.latitude,
+    lon: place.longitude
+  }));
+  onCitySet(placeName);
+  cityPickEl.hidden = true;
+}
+
+/* Search for a city. If the name matches several places, show a picker. */
 async function fetchCityWeather(query) {
   const geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name="
-    + encodeURIComponent(query) + "&count=1&language=en&format=json";
+    + encodeURIComponent(query) + "&count=5&language=en&format=json";
   const geoResponse = await fetch(geoUrl);
   if (!geoResponse.ok) throw new Error("geocoding request failed");
   const geoData = await geoResponse.json();
   if (!geoData.results || !geoData.results.length) throw new Error("city not found");
-  const place = geoData.results[0];
-  const placeName = place.name + (place.country ? ", " + place.country : "");
-  await showWeather(place.latitude, place.longitude, placeName);
-  localStorage.setItem(CITY_KEY, query);
-  onCitySet(placeName);
+  cityResults = geoData.results;
+
+  if (cityResults.length === 1) {
+    await applyCity(cityResults[0]);
+    return;
+  }
+
+  cityPickEl.innerHTML = '<option value="">Choose your city…</option>';
+  cityResults.forEach((place, index) => {
+    const opt = document.createElement("option");
+    opt.value = String(index);
+    opt.textContent = placeLabel(place);
+    cityPickEl.appendChild(opt);
+  });
+  cityPickEl.hidden = false;
+  weatherLocationEl.textContent = "Which " + query + "?";
+  weatherDescEl.textContent = "Several places match — pick yours.";
 }
+
+cityPickEl.addEventListener("change", () => {
+  const place = cityResults[Number(cityPickEl.value)];
+  if (place) {
+    applyCity(place).catch(() => weatherUnavailable("Couldn't load that place. Try again."));
+  }
+});
 
 cityFormEl.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -653,9 +721,17 @@ cityToggleEl.addEventListener("click", () => {
   cityInputEl.focus();
 });
 
-const savedCity = localStorage.getItem(CITY_KEY);
-if (savedCity) {
-  fetchCityWeather(savedCity).catch(() => weatherUnavailable("Couldn't load the saved city. Re-enter it below."));
+const savedCityRaw = localStorage.getItem(CITY_KEY);
+if (savedCityRaw) {
+  let savedInfo = null;
+  try { savedInfo = JSON.parse(savedCityRaw); } catch { savedInfo = null; }
+  if (savedInfo && typeof savedInfo === "object" && savedInfo.lat !== undefined && savedInfo.lon !== undefined) {
+    showWeather(savedInfo.lat, savedInfo.lon, savedInfo.name || "Your city")
+      .catch(() => weatherUnavailable("Couldn't load the saved city. Re-enter it below."));
+    onCitySet(savedInfo.name || "Your city");
+  } else {
+    fetchCityWeather(savedCityRaw).catch(() => weatherUnavailable("Couldn't load the saved city. Re-enter it below."));
+  }
 } else if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(onLocationFound, onLocationFailed, { timeout: 8000 });
 } else {
