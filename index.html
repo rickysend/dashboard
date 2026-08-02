@@ -106,6 +106,47 @@
     color: var(--muted);
   }
 
+  .city-form {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+
+  .city-form input {
+    flex: 1;
+    max-width: 260px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.6rem 0.9rem;
+    font-size: 1rem;
+    color: var(--text);
+  }
+
+  .city-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .city-form button {
+    padding: 0.6rem 1.1rem;
+    font-size: 1rem;
+  }
+
+  .city-toggle {
+    margin-top: 0.75rem;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .city-toggle:hover {
+    color: var(--accent);
+    filter: none;
+  }
+
   /* ===== Section titles ===== */
   h2 {
     font-size: 1.25rem;
@@ -301,6 +342,12 @@
         <span id="weather-temp">–°F</span>
       </p>
       <p id="weather-desc">Checking the sky…</p>
+      <form id="city-form" class="city-form" hidden>
+        <label for="city-input" class="visually-hidden">City</label>
+        <input id="city-input" type="text" placeholder="City, e.g. New York" autocomplete="off">
+        <button type="submit">Set</button>
+      </form>
+      <button id="city-toggle" type="button" class="city-toggle">Set city</button>
     </section>
 
     <!-- 2. TO-DOS -->
@@ -518,6 +565,13 @@ async function fetchWeather(lat, lon) {
   return data.current_weather;                     // { temperature, weathercode, is_day, ... }
 }
 
+function weatherUnavailable(details) {
+  weatherLocationEl.textContent = "Weather unavailable";
+  weatherIconEl.textContent = "🌡️";
+  weatherTempEl.textContent = "–°F";
+  weatherDescEl.textContent = details;
+}
+
 async function showWeather(lat, lon, placeName) {
   try {
     const current = await fetchWeather(lat, lon);
@@ -527,10 +581,7 @@ async function showWeather(lat, lon, placeName) {
     weatherTempEl.textContent = Math.round(current.temperature) + "°F";
     weatherDescEl.textContent = desc;
   } catch {
-    weatherLocationEl.textContent = "Location unavailable";
-    weatherIconEl.textContent = "🌡️";
-    weatherTempEl.textContent = "–°F";
-    weatherDescEl.textContent = "Weather unavailable";
+    weatherUnavailable("Couldn't reach the weather service. Try again in a moment.");
   }
 }
 
@@ -542,14 +593,70 @@ function onLocationFound(position) {
   );
 }
 
-function onLocationFailed() {
-  weatherLocationEl.textContent = "Location unavailable";
-  weatherIconEl.textContent = "🌡️";
-  weatherTempEl.textContent = "–°F";
-  weatherDescEl.textContent = "Weather unavailable";
+function onLocationFailed(error) {
+  if (error && error.code === 1) {
+    weatherUnavailable("Location is blocked. Click the icon in the address bar to allow it, or set a city below.");
+  } else if (error && error.code === 2) {
+    weatherUnavailable("Couldn't get a GPS fix. Check Windows location settings, or set a city below.");
+  } else {
+    weatherUnavailable("Location is off or timed out. Check Windows location settings, or set a city below.");
+  }
+  cityFormEl.hidden = false;
+  cityToggleEl.hidden = true;
 }
 
-if (navigator.geolocation) {
+/* ============ 6. MANUAL CITY — fallback when geolocation is unavailable ============ */
+const CITY_KEY = "dashboard.city";
+const cityFormEl = document.getElementById("city-form");
+const cityInputEl = document.getElementById("city-input");
+const cityToggleEl = document.getElementById("city-toggle");
+
+function onCitySet(placeName) {
+  cityFormEl.hidden = true;
+  cityToggleEl.hidden = false;
+  cityToggleEl.textContent = "Change city";
+}
+
+async function fetchCityWeather(query) {
+  const geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name="
+    + encodeURIComponent(query) + "&count=1&language=en&format=json";
+  const geoResponse = await fetch(geoUrl);
+  if (!geoResponse.ok) throw new Error("geocoding request failed");
+  const geoData = await geoResponse.json();
+  if (!geoData.results || !geoData.results.length) throw new Error("city not found");
+  const place = geoData.results[0];
+  const placeName = place.name + (place.country ? ", " + place.country : "");
+  await showWeather(place.latitude, place.longitude, placeName);
+  localStorage.setItem(CITY_KEY, query);
+  onCitySet(placeName);
+}
+
+cityFormEl.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const query = cityInputEl.value.trim();
+  if (!query) return;
+  cityInputEl.disabled = true;
+  weatherLocationEl.textContent = "Looking up " + query + "…";
+  try {
+    await fetchCityWeather(query);
+  } catch {
+    weatherUnavailable("Couldn't find that place. Try a city name, like 'New York'.");
+  } finally {
+    cityInputEl.disabled = false;
+    cityInputEl.focus();
+  }
+});
+
+cityToggleEl.addEventListener("click", () => {
+  cityFormEl.hidden = false;
+  cityToggleEl.hidden = true;
+  cityInputEl.focus();
+});
+
+const savedCity = localStorage.getItem(CITY_KEY);
+if (savedCity) {
+  fetchCityWeather(savedCity).catch(() => weatherUnavailable("Couldn't load the saved city. Re-enter it below."));
+} else if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(onLocationFound, onLocationFailed, { timeout: 8000 });
 } else {
   onLocationFailed();
