@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Dashboard</title>
+<style>
+  /* ===== Design: dark, calm, one accent colour ===== */
+  :root {
+    --bg: #1a1d21;        /* page background */
+    --card: #202429;      /* card background */
+    --border: #2d333a;    /* subtle card borders */
+    --accent: #5eead4;    /* the one accent colour (teal) */
+    --text: #e8edf2;      /* main text */
+    --muted: #9aa4af;     /* secondary text */
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;   /* to-dos and links sit side by side */
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+  }
+
+  header.card {
+    grid-column: 1 / -1;              /* clock stretches across both columns */
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+  }
+
+  /* ===== Clock and date ===== */
+  #clock {
+    display: block;
+    font-size: clamp(3.5rem, 10vw, 5rem);
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums; /* keeps the digits from jittering */
+    letter-spacing: 0.02em;
+  }
+
+  #date {
+    margin-top: 0.5rem;
+    font-size: 1.5rem;
+    color: var(--muted);
+  }
+
+  /* ===== Weather ===== */
+  .weather-card {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 1.2rem 1.5rem;
+  }
+
+  #weather-location {
+    font-size: 1rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  #weather-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  #weather-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+  }
+
+  #weather-temp {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  #weather-desc {
+    margin-top: 0.25rem;
+    font-size: 1.125rem;
+    color: var(--muted);
+  }
+
+  /* ===== Section titles ===== */
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .notes-card {
+    grid-column: 1 / -1;              /* notes stretch across both columns */
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ===== To-do list ===== */
+  #todo-form {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+
+  #todo-input {
+    flex: 1;
+    min-width: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 1.125rem;
+    color: var(--text);
+  }
+
+  #todo-input:focus,
+  #notes:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  button {
+    background: var(--accent);
+    color: #0b1220;
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 1.25rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button:hover {
+    filter: brightness(1.08);
+  }
+
+  #todo-list {
+    list-style: none;
+  }
+
+  #todo-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #todo-list li:last-child {
+    border-bottom: none;
+  }
+
+  #todo-list label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.125rem;
+    cursor: pointer;
+    min-width: 0;
+  }
+
+  #todo-list label span {
+    overflow-wrap: anywhere;
+  }
+
+  input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: var(--accent);      /* paints the checkbox in the accent colour */
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  li.done label span {
+    text-decoration: line-through;    /* checked items get struck through */
+    color: var(--muted);
+  }
+
+  button.delete {
+    background: transparent;
+    color: var(--muted);
+    padding: 0.25rem 0.5rem;
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+
+  button.delete:hover {
+    color: #ff8c8c;
+    filter: none;
+  }
+
+  .empty {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* ===== Links ===== */
+  #links-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  #links-list a {
+    display: block;
+    padding: 0.85rem 1rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    text-decoration: none;
+    text-align: center;
+    font-size: 1.125rem;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  #links-list a:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ===== Notes ===== */
+  #notes {
+    width: 100%;
+    min-height: 170px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    font-family: inherit;
+    font-size: 1.125rem;
+    line-height: 1.6;
+    color: var(--text);
+    resize: vertical;                 /* lets you drag the box taller */
+  }
+
+  /* ===== Narrow screens: everything stacks in one column ===== */
+  @media (max-width: 700px) {
+    main {
+      grid-template-columns: 1fr;
+    }
+    #clock {
+      font-size: 3rem;
+    }
+  }
+</style>
+</head>
+<body>
+  <main>
+    <!-- 1. CLOCK -->
+    <header class="card">
+      <time id="clock">--:--:--</time>
+      <p id="date"></p>
+    </header>
+
+    <!-- WEATHER -->
+    <section class="card weather-card">
+      <h2 class="visually-hidden">Weather</h2>
+      <p id="weather-location">Locating…</p>
+      <p id="weather-main">
+        <span id="weather-icon" aria-hidden="true"></span>
+        <span id="weather-temp">–°F</span>
+      </p>
+      <p id="weather-desc">Checking the sky…</p>
+    </section>
+
+    <!-- 2. TO-DOS -->
+    <section class="card" aria-labelledby="todos-title">
+      <h2 id="todos-title">To-dos</h2>
+      <form id="todo-form">
+        <label for="todo-input" class="visually-hidden">New to-do</label>
+        <input id="todo-input" type="text" placeholder="Add a to-do…" autocomplete="off">
+        <button type="submit">Add</button>
+      </form>
+      <ul id="todo-list"></ul>
+    </section>
+
+    <!-- 3. LINKS -->
+    <section class="card" aria-labelledby="links-title">
+      <h2 id="links-title">Links</h2>
+      <ul id="links-list"></ul>
+    </section>
+
+    <!-- 4. NOTES -->
+    <section class="card notes-card" aria-labelledby="notes-title">
+      <h2 id="notes-title">Notes</h2>
+      <label for="notes" class="visually-hidden">Notes</label>
+      <textarea id="notes" placeholder="Type anything…"></textarea>
+    </section>
+  </main>
+
+<script>
+/* ============================================================
+   LINKS — edit your six bookmarks here, then save & refresh.
+   Each bookmark is { name: "Text you see", url: "https://..." }
+   ============================================================ */
+const BOOKMARKS = [
+  { name: "GitHub",      url: "https://github.com" },
+  { name: "Gmail",       url: "https://mail.google.com" },
+  { name: "YouTube",     url: "https://youtube.com" },
+  { name: "Wikipedia",   url: "https://wikipedia.org" },
+  { name: "Google Maps", url: "https://maps.google.com" },
+  { name: "Translate",   url: "https://translate.google.com" }
+];
+
+/* ============ 1. CLOCK — update every second ============ */
+const clockEl = document.getElementById("clock");
+const dateEl = document.getElementById("date");
+
+function updateClock() {
+  const now = new Date();                          // the current moment
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  const ss = String(now.getSeconds()).padStart(2, "0");
+  clockEl.textContent = hh + ":" + mm + ":" + ss;
+  dateEl.textContent = now.toLocaleDateString(undefined, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+}
+
+updateClock();                                     // show immediately
+setInterval(updateClock, 1000);                    // ...then again every 1000 ms
+
+/* ============ 2. TO-DOS — add, check, delete, save ============ */
+const TODO_KEY = "dashboard.todos";                // the localStorage key
+let todos = JSON.parse(localStorage.getItem(TODO_KEY)) || [];
+
+const todoForm = document.getElementById("todo-form");
+const todoInput = document.getElementById("todo-input");
+const todoListEl = document.getElementById("todo-list");
+renderTodos();                                     // paint saved to-dos on load
+
+function saveTodos() {
+  localStorage.setItem(TODO_KEY, JSON.stringify(todos));
+}
+
+function renderTodos() {
+  todoListEl.innerHTML = "";                       // clear the list...
+  if (todos.length === 0) {                        // ...then repaint it
+    const empty = document.createElement("li");
+    empty.className = "empty";
+    empty.textContent = "No to-dos yet — add one above.";
+    todoListEl.appendChild(empty);
+    return;
+  }
+  for (const todo of todos) {
+    const li = document.createElement("li");
+    if (todo.done) li.className = "done";
+
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.dataset.id = todo.id;
+    checkbox.checked = todo.done;
+    const span = document.createElement("span");
+    span.textContent = todo.text;
+    label.append(checkbox, span);
+
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "delete";
+    del.dataset.id = todo.id;
+    del.textContent = "×";
+    del.setAttribute("aria-label", "Delete to-do");
+
+    li.append(label, del);
+    todoListEl.appendChild(li);
+  }
+}
+
+todoForm.addEventListener("submit", (event) => {
+  event.preventDefault();                          // don't reload the page
+  const text = todoInput.value.trim();
+  if (!text) return;
+  todos.push({ id: Date.now(), text, done: false });
+  saveTodos();
+  renderTodos();
+  todoInput.value = "";
+  todoInput.focus();
+});
+
+todoListEl.addEventListener("change", (event) => { // a checkbox was clicked
+  if (!event.target.matches('input[type="checkbox"]')) return;
+  const todo = todos.find(t => t.id === Number(event.target.dataset.id));
+  if (todo) {
+    todo.done = event.target.checked;
+    saveTodos();
+    renderTodos();
+  }
+});
+
+todoListEl.addEventListener("click", (event) => {  // a delete button was clicked
+  const del = event.target.closest("button.delete");
+  if (!del) return;
+  todos = todos.filter(t => t.id !== Number(del.dataset.id));
+  saveTodos();
+  renderTodos();
+});
+
+/* ============ 3. LINKS — paint the six bookmarks ============ */
+const linksListEl = document.getElementById("links-list");
+
+for (const bookmark of BOOKMARKS) {
+  const li = document.createElement("li");
+  const a = document.createElement("a");
+  a.href = bookmark.url;
+  a.target = "_blank";                             // open in a new tab
+  a.rel = "noopener";                              // new tab can't tamper with this page
+  a.textContent = bookmark.name;
+  li.appendChild(a);
+  linksListEl.appendChild(li);
+}
+
+/* ============ 4. NOTES — save every keystroke ============ */
+const NOTES_KEY = "dashboard.notes";               // the localStorage key
+const notesEl = document.getElementById("notes");
+
+notesEl.value = localStorage.getItem(NOTES_KEY) || "";
+notesEl.addEventListener("input", () => {
+  localStorage.setItem(NOTES_KEY, notesEl.value);
+});
+
+/* ============ 5. WEATHER — location + free Open-Meteo API ============ */
+const weatherLocationEl = document.getElementById("weather-location");
+const weatherIconEl = document.getElementById("weather-icon");
+const weatherTempEl = document.getElementById("weather-temp");
+const weatherDescEl = document.getElementById("weather-desc");
+
+/* WMO weather codes -> readable condition + emoji */
+const WEATHER_DESCRIPTIONS = {
+  0:  ["Clear sky",         "☀️"],
+  1:  ["Mainly clear",      "🌤️"],
+  2:  ["Partly cloudy",     "⛅"],
+  3:  ["Overcast",          "☁️"],
+  45: ["Fog",               "🌫️"],
+  48: ["Freezing fog",      "🌫️"],
+  51: ["Light drizzle",     "🌦️"],
+  53: ["Drizzle",           "🌦️"],
+  55: ["Dense drizzle",     "🌦️"],
+  61: ["Light rain",        "🌧️"],
+  63: ["Rain",              "🌧️"],
+  65: ["Heavy rain",        "🌧️"],
+  71: ["Light snow",        "🌨️"],
+  73: ["Snow",              "🌨️"],
+  75: ["Heavy snow",        "🌨️"],
+  77: ["Snow grains",       "🌨️"],
+  80: ["Light showers",     "🌧️"],
+  81: ["Showers",           "🌧️"],
+  82: ["Heavy showers",     "🌧️"],
+  85: ["Snow showers",      "🌨️"],
+  86: ["Heavy snow showers","🌨️"],
+  95: ["Thunderstorm",      "⛈️"],
+  96: ["Storm with hail",   "⛈️"],
+  99: ["Hail storm",        "⛈️"]
+};
+
+/* Turn a WMO code into [description, emoji]; nights with clear
+   sky get a moon instead of a sun. */
+function describeWeather(code, isDay) {
+  const entry = WEATHER_DESCRIPTIONS[code] || ["Unknown", "🌡️"];
+  const label = entry[0];
+  const emoji = entry[1];
+  if (!isDay && (code === 0 || code === 1)) return [label, "🌙"];
+  return [label, emoji];
+}
+
+async function fetchWeather(lat, lon) {
+  const url = "https://api.open-meteo.com/v1/forecast"
+    + "?latitude=" + lat
+    + "&longitude=" + lon
+    + "&current_weather=true"
+    + "&temperature_unit=fahrenheit";
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("weather request failed");
+  const data = await response.json();
+  return data.current_weather;                     // { temperature, weathercode, is_day, ... }
+}
+
+async function showWeather(lat, lon, placeName) {
+  try {
+    const current = await fetchWeather(lat, lon);
+    const [desc, emoji] = describeWeather(current.weathercode, current.is_day);
+    weatherLocationEl.textContent = placeName;
+    weatherIconEl.textContent = emoji;
+    weatherTempEl.textContent = Math.round(current.temperature) + "°F";
+    weatherDescEl.textContent = desc;
+  } catch {
+    weatherLocationEl.textContent = "Location unavailable";
+    weatherIconEl.textContent = "🌡️";
+    weatherTempEl.textContent = "–°F";
+    weatherDescEl.textContent = "Weather unavailable";
+  }
+}
+
+function onLocationFound(position) {
+  showWeather(
+    position.coords.latitude,
+    position.coords.longitude,
+    "Current location"
+  );
+}
+
+function onLocationFailed() {
+  weatherLocationEl.textContent = "Location unavailable";
+  weatherIconEl.textContent = "🌡️";
+  weatherTempEl.textContent = "–°F";
+  weatherDescEl.textContent = "Weather unavailable";
+}
+
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(onLocationFound, onLocationFailed, { timeout: 8000 });
+} else {
+  onLocationFailed();
+}
+</script>
+</body>
+</html>
