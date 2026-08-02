@@ -689,6 +689,33 @@
     margin-top: 0.4rem;
   }
 
+  .pet-pick {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-top: 0.6rem;
+  }
+
+  .pet-option {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.3rem 0.5rem;
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  .pet-option:hover {
+    border-color: var(--accent);
+    filter: none;
+  }
+
+  .pet-option.active {
+    border-color: var(--accent);
+    background: rgba(94, 234, 212, 0.12);
+  }
+
   /* ===== Narrow screens: single column + smaller components ===== */
   @media (max-width: 700px) {
     body {
@@ -847,12 +874,18 @@
     <!-- 5. PET — a little companion (secondary) -->
     <section class="card pet-card" aria-labelledby="pet-title">
       <h2 id="pet-title" class="visually-hidden">Pet</h2>
-      <div class="pet-stage" id="pet-stage" role="button" tabindex="0" aria-label="Pet the cat">
+      <div class="pet-stage" id="pet-stage" role="button" tabindex="0" aria-label="Pet your companion">
         <span class="pet-emoji" id="pet-emoji">🐱</span>
       </div>
       <p class="pet-status" id="pet-status">Click to pet!</p>
       <div class="pet-bar"><div class="pet-bar-fill" id="pet-bar-fill" style="width:50%"></div></div>
       <p class="pet-count" id="pet-count">Pets: 0</p>
+      <div class="pet-pick" role="group" aria-label="Choose your pet">
+        <button type="button" class="pet-option" data-pet="🐱" aria-label="Cat">🐱</button>
+        <button type="button" class="pet-option" data-pet="🐶" aria-label="Dog">🐶</button>
+        <button type="button" class="pet-option" data-pet="🐸" aria-label="Frog">🐸</button>
+        <button type="button" class="pet-option" data-pet="🦊" aria-label="Fox">🦊</button>
+      </div>
     </section>
 
     <!-- 6. CHAT — local, just for you (secondary) -->
@@ -1625,17 +1658,19 @@ renderChat();
 
 /* ============ 9. PET — a cute companion, saved in localStorage ============ */
 const PET_KEY = "dashboard.pet";
-let petState = JSON.parse(localStorage.getItem(PET_KEY)) || { happiness: 50, count: 0, lastSeen: Date.now() };
+let petState = JSON.parse(localStorage.getItem(PET_KEY)) || { happiness: 50, count: 0, lastSeen: Date.now(), pet: "🐱" };
 
 const petStage = document.getElementById("pet-stage");
 const petEmoji = document.getElementById("pet-emoji");
 const petStatus = document.getElementById("pet-status");
 const petBarFill = document.getElementById("pet-bar-fill");
 const petCount = document.getElementById("pet-count");
+const petOptions = document.querySelectorAll(".pet-option");
 
-/* Decay happiness while you were away — 1% per minute, down to 0. */
+/* Decay happiness while you were away — 1% per minute, but never below 5%
+   so the pet never looks sad or pressures you to return. */
 const minutesAway = Math.floor((Date.now() - (petState.lastSeen || Date.now())) / 60000);
-if (minutesAway > 0) petState.happiness = Math.max(0, petState.happiness - minutesAway);
+if (minutesAway > 0) petState.happiness = Math.max(5, petState.happiness - minutesAway);
 
 function savePet() {
   petState.lastSeen = Date.now();
@@ -1644,24 +1679,30 @@ function savePet() {
 
 function renderPet() {
   const h = petState.happiness;
+  petEmoji.textContent = petState.pet;
   petBarFill.style.width = h + "%";
 
-  /* Mood-based colour: warm when happy, cool when lonely. */
+  /* Mood-based colour: warm when happy, cool when calm. */
   if (h >= 70) {
     petBarFill.style.background = "#5eead4";
-    petStatus.textContent = "Purring contentedly ✨";
+    petStatus.textContent = "Happy and content ✨";
   } else if (h >= 40) {
     petBarFill.style.background = "#5eead4";
     petStatus.textContent = "Click to pet!";
   } else if (h >= 15) {
     petBarFill.style.background = "#9aa4af";
-    petStatus.textContent = "Looking a little lonely…";
+    petStatus.textContent = "Chilling quietly…";
   } else {
     petBarFill.style.background = "#6b7280";
-    petStatus.textContent = "😴 The cat is sleepy.";
+    petStatus.textContent = "Taking a nap 😴";
   }
 
   petCount.textContent = "Pets: " + petState.count;
+
+  /* Highlight the selected pet. */
+  petOptions.forEach(opt => {
+    opt.classList.toggle("active", opt.dataset.pet === petState.pet);
+  });
 }
 
 function spawnHeart() {
@@ -1689,6 +1730,15 @@ function petTheCat() {
   renderPet();
 }
 
+/* Choose a pet — preserved in localStorage. */
+petOptions.forEach(opt => {
+  opt.addEventListener("click", () => {
+    petState.pet = opt.dataset.pet;
+    savePet();
+    renderPet();
+  });
+});
+
 petStage.addEventListener("click", petTheCat);
 petStage.addEventListener("keydown", (e) => {
   if (e.key === "Enter" || e.key === " ") {
@@ -1697,9 +1747,29 @@ petStage.addEventListener("keydown", (e) => {
   }
 });
 
-/* Slow decay: 1% every 10 seconds. One cheap setInterval. */
+/* Rewards tied to healthy dashboard use: completing a to-do or sending a
+   chat message gives the pet a small happiness boost. */
+function rewardPet(amount) {
+  petState.happiness = Math.min(100, petState.happiness + amount);
+  savePet();
+  renderPet();
+}
+
+/* Hook into to-do completion. */
+todoListEl.addEventListener("change", (event) => {
+  if (event.target.matches('input[type="checkbox"]') && event.target.checked) {
+    rewardPet(10);
+  }
+});
+
+/* Hook into chat messages. */
+chatForm.addEventListener("submit", () => {
+  rewardPet(5);
+});
+
+/* Slow decay: 1% every 10 seconds, but never below 5% (no pressure). */
 setInterval(() => {
-  petState.happiness = Math.max(0, petState.happiness - 1);
+  petState.happiness = Math.max(5, petState.happiness - 1);
   savePet();
   renderPet();
 }, 10000);
