@@ -338,6 +338,19 @@
   }
 
   /* ===== Notes ===== */
+  .notes-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .notes-saved {
+    font-size: 0.75rem;
+    color: var(--accent);
+    min-height: 1em;
+  }
+
   #notes {
     width: 100%;
     min-height: 130px;
@@ -823,7 +836,10 @@
 
     <!-- 4. NOTES — today's notes -->
     <section class="card notes-card" aria-labelledby="notes-title">
-      <h2 id="notes-title">Notes</h2>
+      <div class="notes-head">
+        <h2 id="notes-title">Notes</h2>
+        <span id="notes-saved" class="notes-saved" aria-live="polite"></span>
+      </div>
       <label for="notes" class="visually-hidden">Notes</label>
       <textarea id="notes" placeholder="Type anything…"></textarea>
     </section>
@@ -935,7 +951,7 @@ function renderTodos() {
     todoListEl.appendChild(empty);
     return;
   }
-  for (const todo of todos) {
+  todos.forEach((todo, index) => {
     const li = document.createElement("li");
     if (todo.done) li.className = "done";
 
@@ -946,7 +962,33 @@ function renderTodos() {
     checkbox.checked = todo.done;
     const span = document.createElement("span");
     span.textContent = todo.text;
+    span.title = "Double-click to edit";
     label.append(checkbox, span);
+
+    /* Move up / move down buttons for reordering. */
+    const moveUp = document.createElement("button");
+    moveUp.type = "button";
+    moveUp.className = "move";
+    moveUp.textContent = "↑";
+    moveUp.setAttribute("aria-label", "Move up");
+    moveUp.disabled = index === 0;
+    moveUp.addEventListener("click", () => {
+      [todos[index - 1], todos[index]] = [todos[index], todos[index - 1]];
+      saveTodos();
+      renderTodos();
+    });
+
+    const moveDown = document.createElement("button");
+    moveDown.type = "button";
+    moveDown.className = "move";
+    moveDown.textContent = "↓";
+    moveDown.setAttribute("aria-label", "Move down");
+    moveDown.disabled = index === todos.length - 1;
+    moveDown.addEventListener("click", () => {
+      [todos[index + 1], todos[index]] = [todos[index], todos[index + 1]];
+      saveTodos();
+      renderTodos();
+    });
 
     const del = document.createElement("button");
     del.type = "button";
@@ -955,9 +997,9 @@ function renderTodos() {
     del.textContent = "×";
     del.setAttribute("aria-label", "Delete to-do");
 
-    li.append(label, del);
+    li.append(label, moveUp, moveDown, del);
     todoListEl.appendChild(li);
-  }
+  });
 }
 
 todoForm.addEventListener("submit", (event) => {
@@ -989,27 +1031,100 @@ todoListEl.addEventListener("click", (event) => {  // a delete button was clicke
   renderTodos();
 });
 
-/* ============ 3. LINKS — paint the six bookmarks ============ */
-const linksListEl = document.getElementById("links-list");
+/* Double-click a to-do's text to edit it inline. */
+todoListEl.addEventListener("dblclick", (event) => {
+  const span = event.target.closest("label span");
+  if (!span) return;
+  const li = span.closest("li");
+  const todo = todos.find(t => t.id === Number(li.querySelector("input[type=checkbox]").dataset.id));
+  if (!todo) return;
 
-for (const bookmark of BOOKMARKS) {
-  const li = document.createElement("li");
-  const a = document.createElement("a");
-  a.href = bookmark.url;
-  a.target = "_blank";                             // open in a new tab
-  a.rel = "noopener";                              // new tab can't tamper with this page
-  a.textContent = bookmark.name;
-  li.appendChild(a);
-  linksListEl.appendChild(li);
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = todo.text;
+  input.className = "todo-edit";
+  input.setAttribute("aria-label", "Edit to-do");
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const commit = () => {
+    const text = input.value.trim();
+    if (text) {
+      todo.text = text;
+      saveTodos();
+    }
+    renderTodos();
+  };
+
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); commit(); }
+    if (e.key === "Escape") { renderTodos(); }
+  });
+});
+
+/* Focus the new-task field by default so adding a to-do is one keystroke. */
+todoInput.focus();
+
+/* ============ 3. LINKS — editable bookmarks, saved to localStorage ============ */
+const LINKS_KEY = "dashboard.links";
+const linksListEl = document.getElementById("links-list");
+let links = JSON.parse(localStorage.getItem(LINKS_KEY)) || BOOKMARKS;
+
+function saveLinks() {
+  localStorage.setItem(LINKS_KEY, JSON.stringify(links));
 }
+
+function renderLinks() {
+  linksListEl.innerHTML = "";
+  links.forEach((bookmark, index) => {
+    const li = document.createElement("li");
+
+    const a = document.createElement("a");
+    a.href = bookmark.url;
+    a.target = "_blank";                           // open in a new tab
+    a.rel = "noopener";                            // new tab can't tamper with this page
+    a.textContent = bookmark.name;
+    a.title = "Click to edit";
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      editLink(index);
+    });
+    li.appendChild(a);
+    linksListEl.appendChild(li);
+  });
+}
+
+/* Click a link to edit its name and URL inline. */
+function editLink(index) {
+  const bookmark = links[index];
+  const name = prompt("Link name:", bookmark.name);
+  if (name === null) return;
+  const url = prompt("Link URL (https://...):", bookmark.url);
+  if (url === null) return;
+  if (name.trim() && url.trim()) {
+    links[index] = { name: name.trim(), url: url.trim() };
+    saveLinks();
+    renderLinks();
+  }
+}
+
+renderLinks();
 
 /* ============ 4. NOTES — save every keystroke ============ */
 const NOTES_KEY = "dashboard.notes";               // the localStorage key
 const notesEl = document.getElementById("notes");
 
+const notesSavedEl = document.getElementById("notes-saved");
+let notesSaveTimer = null;
+
 notesEl.value = localStorage.getItem(NOTES_KEY) || "";
 notesEl.addEventListener("input", () => {
   localStorage.setItem(NOTES_KEY, notesEl.value);
+  notesSavedEl.textContent = "Saved ✓";
+  clearTimeout(notesSaveTimer);
+  notesSaveTimer = setTimeout(() => { notesSavedEl.textContent = ""; }, 2000);
 });
 
 /* ============ 5. WEATHER — location + free Open-Meteo API ============ */
