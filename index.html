@@ -683,7 +683,7 @@
       <h2 id="music-title">Music</h2>
       <form id="music-form" class="music-form">
         <label for="music-input" class="visually-hidden">Add a YouTube link</label>
-        <input id="music-input" type="text" placeholder="Paste a YouTube link…" autocomplete="off">
+        <input id="music-input" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Paste a YouTube link…" autocomplete="off">
         <button type="submit">Add</button>
       </form>
       <div class="player-frame">
@@ -1201,6 +1201,18 @@ musicForm.addEventListener("submit", (event) => {
   musicInput.value = "";
   musicInput.focus();
   if (musicIndex === -1) playMusicAt(0);   // auto-play the first link you add
+});
+
+/* Make paste reliable on iOS — insert the clipboard text at the cursor. */
+musicInput.addEventListener("paste", (event) => {
+  const data = (event.clipboardData || window.clipboardData).getData("text");
+  if (!data) return;
+  event.preventDefault();
+  const start = musicInput.selectionStart;
+  const end = musicInput.selectionEnd;
+  musicInput.value = musicInput.value.slice(0, start) + data + musicInput.value.slice(end);
+  const pos = start + data.length;
+  musicInput.setSelectionRange(pos, pos);
 });
 
 musicPrevBtn.addEventListener("click", prevMusic);
