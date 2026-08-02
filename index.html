@@ -71,6 +71,26 @@
     letter-spacing: 0.02em;
   }
 
+  /* Red × to clear all data, top-right of the clock header. */
+  .clear-data {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.4rem;
+    background: transparent;
+    color: #ef4444;
+    border: none;
+    border-radius: 6px;
+    padding: 0.1rem 0.35rem;
+    font-size: 1.1rem;
+    line-height: 1;
+    font-weight: 700;
+  }
+
+  .clear-data:hover {
+    color: #ff6b6b;
+    filter: none;
+  }
+
   #date {
     margin-top: 0.3rem;
     font-size: 0.85rem;
@@ -824,13 +844,14 @@
       </div>
     </section>
 
-    <!-- 1. CLOCK — today's time and date -->
+    <!-- 1. CLOCK — today's time and date (top left) -->
     <header class="card">
       <time id="clock">--:--:--</time>
       <p id="date"></p>
+      <button id="clear-storage" class="clear-data" type="button" title="Clear all data" aria-label="Clear all data">×</button>
     </header>
 
-    <!-- 2. WEATHER — today's weather -->
+    <!-- 2. WEATHER — today's weather (top right) -->
     <section class="card weather-card">
       <h2 class="visually-hidden">Weather</h2>
       <p id="weather-location">Locating…</p>
@@ -850,7 +871,13 @@
       <button id="city-toggle" type="button" class="city-toggle">Set city</button>
     </section>
 
-    <!-- 3. TO-DOS — today's tasks -->
+    <!-- 3. LINKS — quick bookmarks (below clock) -->
+    <section class="card" aria-labelledby="links-title">
+      <h2 id="links-title">Links</h2>
+      <ul id="links-list"></ul>
+    </section>
+
+    <!-- 4. TO-DOS — today's tasks (below weather) -->
     <section class="card" aria-labelledby="todos-title">
       <h2 id="todos-title">To-dos</h2>
       <form id="todo-form">
@@ -861,17 +888,7 @@
       <ul id="todo-list"></ul>
     </section>
 
-    <!-- 4. NOTES — today's notes -->
-    <section class="card notes-card" aria-labelledby="notes-title">
-      <div class="notes-head">
-        <h2 id="notes-title">Notes</h2>
-        <span id="notes-saved" class="notes-saved" aria-live="polite"></span>
-      </div>
-      <label for="notes" class="visually-hidden">Notes</label>
-      <textarea id="notes" placeholder="Type anything…"></textarea>
-    </section>
-
-    <!-- 5. PET — a little companion (secondary) -->
+    <!-- 5. PET — a little companion -->
     <section class="card pet-card" aria-labelledby="pet-title">
       <h2 id="pet-title" class="visually-hidden">Pet</h2>
       <div class="pet-stage" id="pet-stage" role="button" tabindex="0" aria-label="Pet your companion">
@@ -888,7 +905,17 @@
       </div>
     </section>
 
-    <!-- 6. CHAT — local, just for you (secondary) -->
+    <!-- 6. NOTES — today's notes -->
+    <section class="card notes-card" aria-labelledby="notes-title">
+      <div class="notes-head">
+        <h2 id="notes-title">Notes</h2>
+        <span id="notes-saved" class="notes-saved" aria-live="polite"></span>
+      </div>
+      <label for="notes" class="visually-hidden">Notes</label>
+      <textarea id="notes" placeholder="Type anything…"></textarea>
+    </section>
+
+    <!-- 7. CHAT — local, just for you -->
     <section class="card chat-card" aria-labelledby="chat-title">
       <h2 id="chat-title">Chat</h2>
       <div id="chat-messages" class="chat-messages">
@@ -901,13 +928,7 @@
       </form>
     </section>
 
-    <!-- 7. LINKS — quick bookmarks (secondary) -->
-    <section class="card" aria-labelledby="links-title">
-      <h2 id="links-title">Links</h2>
-      <ul id="links-list"></ul>
-    </section>
-
-    <!-- 8. MUSIC — YouTube queue (secondary) -->
+    <!-- 8. MUSIC — YouTube queue -->
     <section class="card music-card" aria-labelledby="music-title">
       <h2 id="music-title">Music</h2>
       <form id="music-form" class="music-form">
@@ -926,10 +947,6 @@
     </section>
 
   </main>
-
-  <footer class="debug">
-    <button id="clear-storage" type="button">Clear all data</button>
-  </footer>
 
 <script>
 /* ============================================================
