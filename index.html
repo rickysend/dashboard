@@ -449,6 +449,53 @@
     font-size: 0.9rem;
   }
 
+  /* ===== Music bar (top of the dashboard) ===== */
+  .music-bar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.6rem 1rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .music-now {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .music-bar-controls {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .music-bar-controls button {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.9rem;
+    line-height: 1;
+    min-width: 2.4rem;
+  }
+
+  .music-bar-controls button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    filter: none;
+  }
+
   /* ===== Narrow screens: everything stacks in one column ===== */
   @media (max-width: 700px) {
     main {
@@ -462,6 +509,16 @@
 </head>
 <body>
   <main>
+    <!-- MUSIC BAR — quick controls at the top -->
+    <section class="music-bar" id="music-bar" hidden aria-label="Music controls">
+      <span class="music-now" id="music-now">♪ —</span>
+      <div class="music-bar-controls">
+        <button id="bar-prev" type="button" aria-label="Previous">⏮</button>
+        <button id="bar-play" type="button" aria-label="Play">▶</button>
+        <button id="bar-next" type="button" aria-label="Next">⏭</button>
+      </div>
+    </section>
+
     <!-- 1. CLOCK -->
     <header class="card">
       <time id="clock">--:--:--</time>
@@ -881,6 +938,11 @@ const musicInput = document.getElementById("music-input");
 const musicListEl = document.getElementById("music-list");
 const musicPrevBtn = document.getElementById("music-prev");
 const musicNextBtn = document.getElementById("music-next");
+const musicBarEl = document.getElementById("music-bar");
+const musicNowEl = document.getElementById("music-now");
+const barPrevBtn = document.getElementById("bar-prev");
+const barPlayBtn = document.getElementById("bar-play");
+const barNextBtn = document.getElementById("bar-next");
 
 function saveMusic() {
   localStorage.setItem(MUSIC_KEY, JSON.stringify(musicQueue));
@@ -902,6 +964,7 @@ function renderMusic() {
     empty.className = "empty";
     empty.textContent = "Paste a YouTube link to start your queue.";
     musicListEl.appendChild(empty);
+    updateMusicBar();
     return;
   }
   musicQueue.forEach((id, i) => {
@@ -941,6 +1004,22 @@ function renderMusic() {
     li.append(thumb, label, playBtn, del);
     musicListEl.appendChild(li);
   });
+  updateMusicBar();
+}
+
+/* Keep the top control bar in sync with the queue and player state. */
+function updateMusicBar() {
+  if (musicQueue.length === 0) {
+    musicBarEl.hidden = true;
+    return;
+  }
+  musicBarEl.hidden = false;
+  musicNowEl.textContent = "♪ " + (musicIndex >= 0 ? musicQueue[musicIndex] : "—");
+}
+
+function setPlayPauseButton(playing) {
+  barPlayBtn.textContent = playing ? "❚❚" : "▶";
+  barPlayBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
 }
 
 function playMusicAt(i) {
@@ -977,6 +1056,17 @@ musicForm.addEventListener("submit", (event) => {
 musicPrevBtn.addEventListener("click", prevMusic);
 musicNextBtn.addEventListener("click", nextMusic);
 
+barPrevBtn.addEventListener("click", prevMusic);
+barNextBtn.addEventListener("click", nextMusic);
+barPlayBtn.addEventListener("click", () => {
+  if (!playerReady || !player) return;
+  if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+    player.pauseVideo();
+  } else {
+    player.playVideo();
+  }
+});
+
 renderMusic();
 
 /* YouTube's IFrame API calls this global when its script has loaded. */
@@ -986,6 +1076,7 @@ function onYouTubeIframeAPIReady() {
     events: {
       onReady: () => {
         playerReady = true;
+        setPlayPauseButton(false);
         if (musicQueue.length > 0) {
           musicIndex = 0;
           renderMusic();
@@ -993,6 +1084,7 @@ function onYouTubeIframeAPIReady() {
       },
       onStateChange: (e) => {
         if (e.data === YT.PlayerState.ENDED) nextMusic();
+        setPlayPauseButton(e.data === YT.PlayerState.PLAYING);
       }
     }
   };
