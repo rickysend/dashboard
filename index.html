@@ -927,6 +927,10 @@
 
   </main>
 
+  <footer class="debug">
+    <button id="clear-storage" type="button">Clear all data</button>
+  </footer>
+
 <script>
 /* ============================================================
    LINKS — edit your six bookmarks here, then save & refresh.
@@ -1775,6 +1779,14 @@ setInterval(() => {
 }, 10000);
 
 renderPet();
+
+/* ============ 10. DEBUG — clear all localStorage ============ */
+document.getElementById("clear-storage").addEventListener("click", () => {
+  if (confirm("Clear all dashboard data? This cannot be undone.")) {
+    localStorage.clear();
+    location.reload();
+  }
+});
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>
 </body>
