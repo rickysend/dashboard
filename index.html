@@ -529,6 +529,64 @@
     filter: none;
   }
 
+  /* ===== Chat (local, just for you, saved in localStorage) ===== */
+  .chat-card {
+    grid-column: 1 / -1;
+  }
+
+  .chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 280px;
+    overflow-y: auto;
+    margin: 0.75rem 0;
+    padding: 0.25rem 0;
+  }
+
+  .chat-msg {
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+
+  .chat-msg .chat-tag {
+    font-weight: 600;
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+
+  .chat-msg .chat-ts {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-left: 0.4rem;
+  }
+
+  .chat-form {
+    display: flex;
+    gap: 0.6rem;
+  }
+
+  .chat-form input {
+    flex: 1;
+    min-width: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+    font-size: 1rem;
+    color: var(--text);
+  }
+
+  .chat-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .chat-form button {
+    padding: 0.65rem 1rem;
+    font-size: 1rem;
+  }
+
   /* ===== Narrow screens: single column + smaller components ===== */
   @media (max-width: 700px) {
     body {
@@ -703,6 +761,19 @@
         <button id="music-next" type="button">Next ›</button>
       </div>
       <ul id="music-list" class="music-list"></ul>
+    </section>
+
+    <!-- 6. CHAT — local, just for you -->
+    <section class="card chat-card" aria-labelledby="chat-title">
+      <h2 id="chat-title">Chat</h2>
+      <div id="chat-messages" class="chat-messages">
+        <span class="chat-msg"><span class="chat-tag">system</span>This is your local chat — messages stay on this browser only.</span>
+      </div>
+      <form id="chat-form" class="chat-form">
+        <label for="chat-input" class="visually-hidden">Message</label>
+        <input id="chat-input" type="text" placeholder="Write yourself a note…" autocomplete="off">
+        <button type="submit">Send</button>
+      </form>
     </section>
   </main>
 
@@ -1281,6 +1352,58 @@ function onYouTubeIframeAPIReady() {
   if (musicQueue.length > 0) config.videoId = musicQueue[0];
   player = new YT.Player("player", config);
 }
+
+/* ============ 8. CHAT — local, just for you, saved in localStorage ============ */
+const CHAT_KEY = "dashboard.chat";
+let chatMessages = JSON.parse(localStorage.getItem(CHAT_KEY)) || [];
+
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-input");
+const chatMessagesEl = document.getElementById("chat-messages");
+
+function renderChat() {
+  chatMessagesEl.innerHTML = "";
+  for (const msg of chatMessages) {
+    const div = document.createElement("div");
+    div.className = "chat-msg";
+
+    const tag = document.createElement("span");
+    tag.className = "chat-tag";
+    tag.textContent = "you";
+
+    const ts = document.createElement("span");
+    ts.className = "chat-ts";
+    ts.textContent = formatChatTime(msg.ts);
+
+    div.append(tag, msg.text, ts);
+    chatMessagesEl.appendChild(div);
+  }
+  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+}
+
+function formatChatTime(ts) {
+  const d = new Date(ts);
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return h + ":" + m;
+}
+
+function saveChat() {
+  localStorage.setItem(CHAT_KEY, JSON.stringify(chatMessages));
+}
+
+chatForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const text = chatInput.value.trim();
+  if (!text) return;
+  chatMessages.push({ text, ts: new Date().getTime() });
+  saveChat();
+  renderChat();
+  chatInput.value = "";
+  chatInput.focus();
+});
+
+renderChat();
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>
 </body>
