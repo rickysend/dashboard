@@ -587,6 +587,95 @@
     font-size: 1rem;
   }
 
+  /* ===== Pet (cute, performant, localStorage-backed) ===== */
+  .pet-card {
+    grid-column: 1 / -1;
+    text-align: center;
+    background: linear-gradient(180deg, #202429 0%, #232830 100%);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .pet-stage {
+    position: relative;
+    display: inline-block;
+    margin: 0.5rem auto 0.75rem;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pet-emoji {
+    font-size: 3.5rem;
+    line-height: 1;
+    display: inline-block;
+    animation: pet-bob 3s ease-in-out infinite;
+    transition: transform 0.2s ease;
+  }
+
+  .pet-stage:active .pet-emoji {
+    transform: scale(0.92);
+  }
+
+  .pet-emoji.wiggle {
+    animation: pet-wiggle 0.5s ease;
+  }
+
+  @keyframes pet-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  @keyframes pet-wiggle {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(-8deg) scale(1.1); }
+    75% { transform: rotate(8deg) scale(1.1); }
+  }
+
+  .pet-heart {
+    position: absolute;
+    font-size: 1.2rem;
+    pointer-events: none;
+    animation: pet-heart-float 0.6s ease-out forwards;
+    left: 50%;
+    top: 20%;
+  }
+
+  @keyframes pet-heart-float {
+    0% { opacity: 1; transform: translate(-50%, 0) scale(0.5); }
+    100% { opacity: 0; transform: translate(-50%, -60px) scale(1.2); }
+  }
+
+  .pet-status {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+    min-height: 1.2em;
+  }
+
+  .pet-bar {
+    width: 100%;
+    max-width: 200px;
+    height: 6px;
+    background: var(--bg);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 0 auto;
+  }
+
+  .pet-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.4s ease, background 0.4s ease;
+  }
+
+  .pet-count {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 0.4rem;
+  }
+
   /* ===== Narrow screens: single column + smaller components ===== */
   @media (max-width: 700px) {
     body {
@@ -693,6 +782,17 @@
           <button id="bar-next" type="button" aria-label="Next">⏭</button>
         </div>
       </div>
+    </section>
+
+    <!-- 0. PET — a little companion -->
+    <section class="card pet-card" aria-labelledby="pet-title">
+      <h2 id="pet-title" class="visually-hidden">Pet</h2>
+      <div class="pet-stage" id="pet-stage" role="button" tabindex="0" aria-label="Pet the cat">
+        <span class="pet-emoji" id="pet-emoji">🐱</span>
+      </div>
+      <p class="pet-status" id="pet-status">Click to pet!</p>
+      <div class="pet-bar"><div class="pet-bar-fill" id="pet-bar-fill" style="width:50%"></div></div>
+      <p class="pet-count" id="pet-count">Pets: 0</p>
     </section>
 
     <!-- 1. CHAT — local, just for you -->
@@ -1405,6 +1505,89 @@ chatForm.addEventListener("submit", (event) => {
 });
 
 renderChat();
+
+/* ============ 9. PET — a cute companion, saved in localStorage ============ */
+const PET_KEY = "dashboard.pet";
+let petState = JSON.parse(localStorage.getItem(PET_KEY)) || { happiness: 50, count: 0, lastSeen: Date.now() };
+
+const petStage = document.getElementById("pet-stage");
+const petEmoji = document.getElementById("pet-emoji");
+const petStatus = document.getElementById("pet-status");
+const petBarFill = document.getElementById("pet-bar-fill");
+const petCount = document.getElementById("pet-count");
+
+/* Decay happiness while you were away — 1% per minute, down to 0. */
+const minutesAway = Math.floor((Date.now() - (petState.lastSeen || Date.now())) / 60000);
+if (minutesAway > 0) petState.happiness = Math.max(0, petState.happiness - minutesAway);
+
+function savePet() {
+  petState.lastSeen = Date.now();
+  localStorage.setItem(PET_KEY, JSON.stringify(petState));
+}
+
+function renderPet() {
+  const h = petState.happiness;
+  petBarFill.style.width = h + "%";
+
+  /* Mood-based colour: warm when happy, cool when lonely. */
+  if (h >= 70) {
+    petBarFill.style.background = "#5eead4";
+    petStatus.textContent = "Purring contentedly ✨";
+  } else if (h >= 40) {
+    petBarFill.style.background = "#5eead4";
+    petStatus.textContent = "Click to pet!";
+  } else if (h >= 15) {
+    petBarFill.style.background = "#9aa4af";
+    petStatus.textContent = "Looking a little lonely…";
+  } else {
+    petBarFill.style.background = "#6b7280";
+    petStatus.textContent = "😴 The cat is sleepy.";
+  }
+
+  petCount.textContent = "Pets: " + petState.count;
+}
+
+function spawnHeart() {
+  const heart = document.createElement("span");
+  heart.className = "pet-heart";
+  heart.textContent = "❤️";
+  /* Slight random horizontal drift so hearts don't stack perfectly. */
+  heart.style.marginLeft = (Math.random() * 20 - 10) + "px";
+  petStage.appendChild(heart);
+  /* Remove after the float animation finishes — no DOM buildup. */
+  setTimeout(() => heart.remove(), 600);
+}
+
+function petTheCat() {
+  petState.happiness = Math.min(100, petState.happiness + 25);
+  petState.count += 1;
+
+  /* Wiggle animation: remove class, force reflow, re-add. */
+  petEmoji.classList.remove("wiggle");
+  void petEmoji.offsetWidth;
+  petEmoji.classList.add("wiggle");
+
+  spawnHeart();
+  savePet();
+  renderPet();
+}
+
+petStage.addEventListener("click", petTheCat);
+petStage.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    petTheCat();
+  }
+});
+
+/* Slow decay: 1% every 10 seconds. One cheap setInterval. */
+setInterval(() => {
+  petState.happiness = Math.max(0, petState.happiness - 1);
+  savePet();
+  renderPet();
+}, 10000);
+
+renderPet();
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>
 </body>
