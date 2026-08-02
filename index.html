@@ -241,6 +241,15 @@
     filter: brightness(1.08);
   }
 
+  button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  button:disabled:hover {
+    filter: none;
+  }
+
   #todo-list {
     list-style: none;
   }
@@ -1114,6 +1123,7 @@ function renderMusic() {
     empty.className = "empty";
     empty.textContent = "Paste a YouTube link to start your queue.";
     musicListEl.appendChild(empty);
+    musicPrevBtn.disabled = musicNextBtn.disabled = true;
     updateMusicBar();
     return;
   }
@@ -1152,6 +1162,7 @@ function renderMusic() {
     });
 
     li.append(thumb, label, playBtn, del);
+    musicPrevBtn.disabled = musicNextBtn.disabled = false;
     musicListEl.appendChild(li);
   });
   updateMusicBar();
@@ -1182,10 +1193,27 @@ function playMusicAt(i) {
 }
 
 function nextMusic() {
+  /* Auto-advance: stop at the end of the queue (no infinite autoplay). */
   if (musicIndex + 1 < musicQueue.length) playMusicAt(musicIndex + 1);
 }
+
+function nextMusicButton() {
+  /* The Next button: advance, or wrap to the first track at the end. */
+  if (musicIndex + 1 < musicQueue.length) {
+    playMusicAt(musicIndex + 1);
+  } else if (musicQueue.length > 0) {
+    playMusicAt(0);
+  }
+}
+
 function prevMusic() {
-  if (musicIndex - 1 >= 0) playMusicAt(musicIndex - 1);
+  /* The Prev button: go back, or restart the current song at the start. */
+  if (musicIndex > 0) {
+    playMusicAt(musicIndex - 1);
+  } else if (musicIndex === 0 && playerReady && player) {
+    player.seekTo(0, true);
+    player.playVideo();
+  }
 }
 
 musicForm.addEventListener("submit", (event) => {
@@ -1216,10 +1244,10 @@ musicInput.addEventListener("paste", (event) => {
 });
 
 musicPrevBtn.addEventListener("click", prevMusic);
-musicNextBtn.addEventListener("click", nextMusic);
+musicNextBtn.addEventListener("click", nextMusicButton);
 
 barPrevBtn.addEventListener("click", prevMusic);
-barNextBtn.addEventListener("click", nextMusic);
+barNextBtn.addEventListener("click", nextMusicButton);
 barPlayBtn.addEventListener("click", () => {
   if (!playerReady || !player) return;
   if (player.getPlayerState() === YT.PlayerState.PLAYING) {
