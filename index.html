@@ -449,12 +449,12 @@
     font-size: 0.9rem;
   }
 
-  /* ===== Music bar (top of the dashboard) ===== */
-  .music-bar {
+  /* ===== Home bar (top of the dashboard): weather + music at a glance ===== */
+  .home-bar {
     grid-column: 1 / -1;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     gap: 1rem;
     background: var(--card);
     border: 1px solid var(--border);
@@ -465,10 +465,33 @@
     color: var(--muted);
   }
 
-  .music-now {
-    flex: 1;
+  .home-weather {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     min-width: 0;
-    text-align: center;
+  }
+
+  #home-w-temp {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  #home-w-loc {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .home-music {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .music-now {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -477,6 +500,7 @@
   .music-bar-controls {
     display: flex;
     gap: 0.4rem;
+    flex-shrink: 0;
   }
 
   .music-bar-controls button {
@@ -509,13 +533,20 @@
 </head>
 <body>
   <main>
-    <!-- MUSIC BAR — quick controls at the top -->
-    <section class="music-bar" id="music-bar" hidden aria-label="Music controls">
-      <span class="music-now" id="music-now">♪ —</span>
-      <div class="music-bar-controls">
-        <button id="bar-prev" type="button" aria-label="Previous">⏮</button>
-        <button id="bar-play" type="button" aria-label="Play">▶</button>
-        <button id="bar-next" type="button" aria-label="Next">⏭</button>
+    <!-- HOME BAR — weather + music at a glance -->
+    <section class="home-bar" aria-label="At a glance">
+      <div class="home-weather" id="home-weather">
+        <span id="home-w-icon" aria-hidden="true">🌡️</span>
+        <span id="home-w-temp">–°</span>
+        <span id="home-w-loc">Locating…</span>
+      </div>
+      <div class="home-music" id="home-music" hidden>
+        <span class="music-now" id="music-now">♪ —</span>
+        <div class="music-bar-controls">
+          <button id="bar-prev" type="button" aria-label="Previous">⏮</button>
+          <button id="bar-play" type="button" aria-label="Play">▶</button>
+          <button id="bar-next" type="button" aria-label="Next">⏭</button>
+        </div>
       </div>
     </section>
 
@@ -536,7 +567,7 @@
       <p id="weather-desc">Checking the sky…</p>
       <form id="city-form" class="city-form" hidden>
         <label for="city-input" class="visually-hidden">City</label>
-        <input id="city-input" type="text" placeholder="City, e.g. New York" autocomplete="off">
+        <input id="city-input" type="text" placeholder="City, ZIP, or lat, lon" autocomplete="off">
         <button type="submit">Set</button>
       </form>
       <select id="city-pick" class="city-pick" hidden>
@@ -727,6 +758,9 @@ const weatherLocationEl = document.getElementById("weather-location");
 const weatherIconEl = document.getElementById("weather-icon");
 const weatherTempEl = document.getElementById("weather-temp");
 const weatherDescEl = document.getElementById("weather-desc");
+const homeWIcon = document.getElementById("home-w-icon");
+const homeWTemp = document.getElementById("home-w-temp");
+const homeWLoc = document.getElementById("home-w-loc");
 
 /* WMO weather codes -> readable condition + emoji */
 const WEATHER_DESCRIPTIONS = {
@@ -783,6 +817,14 @@ function weatherUnavailable(details) {
   weatherIconEl.textContent = "🌡️";
   weatherTempEl.textContent = "–°F";
   weatherDescEl.textContent = details;
+  updateHomeWeather("🌡️", "–°", "Weather unavailable");
+}
+
+/* Mirror the weather card into the top home bar. */
+function updateHomeWeather(icon, temp, loc) {
+  homeWIcon.textContent = icon;
+  homeWTemp.textContent = temp;
+  homeWLoc.textContent = loc;
 }
 
 async function showWeather(lat, lon, placeName) {
@@ -793,6 +835,7 @@ async function showWeather(lat, lon, placeName) {
     weatherIconEl.textContent = emoji;
     weatherTempEl.textContent = Math.round(current.temperature) + "°F";
     weatherDescEl.textContent = desc;
+    updateHomeWeather(emoji, Math.round(current.temperature) + "°", placeName);
   } catch {
     weatherUnavailable("Couldn't reach the weather service. Try again in a moment.");
   }
@@ -808,11 +851,11 @@ function onLocationFound(position) {
 
 function onLocationFailed(error) {
   if (error && error.code === 1) {
-    weatherUnavailable("Location is blocked. Click the icon in the address bar to allow it, or set a city below.");
+    weatherUnavailable("Location is blocked. Click the icon in the address bar to allow it, or set a city, ZIP, or coordinates below.");
   } else if (error && error.code === 2) {
-    weatherUnavailable("Couldn't get a GPS fix. Check Windows location settings, or set a city below.");
+    weatherUnavailable("Couldn't get a GPS fix. Check Windows location settings, or set a city, ZIP, or coordinates below.");
   } else {
-    weatherUnavailable("Location is off or timed out. Check Windows location settings, or set a city below.");
+    weatherUnavailable("Location is off or timed out. Check Windows location settings, or set a city, ZIP, or coordinates below.");
   }
   cityFormEl.hidden = false;
   cityToggleEl.hidden = true;
@@ -850,6 +893,14 @@ async function applyCity(place) {
     lon: place.longitude
   }));
   onCitySet(placeName);
+  cityPickEl.hidden = true;
+}
+
+/* Use raw coordinates directly — no geocoding needed. */
+async function applyCoords(lat, lon) {
+  await showWeather(lat, lon, "Coordinates");
+  localStorage.setItem(CITY_KEY, JSON.stringify({ name: "Coordinates", lat, lon }));
+  onCitySet("Coordinates");
   cityPickEl.hidden = true;
 }
 
@@ -893,10 +944,31 @@ cityFormEl.addEventListener("submit", async (event) => {
   if (!query) return;
   cityInputEl.disabled = true;
   weatherLocationEl.textContent = "Looking up " + query + "…";
+
+  /* Smart search: "lat, lon" coordinates are used directly; anything else
+     (a city name or a ZIP code) goes through the geocoder, with a picker
+     when the match is ambiguous. */
+  const coords = query.match(/^\s*(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)\s*$/);
+  if (coords) {
+    const lat = parseFloat(coords[1]);
+    const lon = parseFloat(coords[2]);
+    if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+      try {
+        await applyCoords(lat, lon);
+      } catch {
+        weatherUnavailable("Couldn't load those coordinates. Try a city or ZIP instead.");
+      } finally {
+        cityInputEl.disabled = false;
+        cityInputEl.focus();
+      }
+      return;
+    }
+  }
+
   try {
     await fetchCityWeather(query);
   } catch {
-    weatherUnavailable("Couldn't find that place. Try a city name, like 'New York'.");
+    weatherUnavailable("Couldn't find that place. Try a city, a ZIP code, or 'lat, lon'.");
   } finally {
     cityInputEl.disabled = false;
     cityInputEl.focus();
@@ -938,7 +1010,7 @@ const musicInput = document.getElementById("music-input");
 const musicListEl = document.getElementById("music-list");
 const musicPrevBtn = document.getElementById("music-prev");
 const musicNextBtn = document.getElementById("music-next");
-const musicBarEl = document.getElementById("music-bar");
+const homeMusicEl = document.getElementById("home-music");
 const musicNowEl = document.getElementById("music-now");
 const barPrevBtn = document.getElementById("bar-prev");
 const barPlayBtn = document.getElementById("bar-play");
@@ -1010,10 +1082,10 @@ function renderMusic() {
 /* Keep the top control bar in sync with the queue and player state. */
 function updateMusicBar() {
   if (musicQueue.length === 0) {
-    musicBarEl.hidden = true;
+    homeMusicEl.hidden = true;
     return;
   }
-  musicBarEl.hidden = false;
+  homeMusicEl.hidden = false;
   musicNowEl.textContent = "♪ " + (musicIndex >= 0 ? musicQueue[musicIndex] : "—");
 }
 
