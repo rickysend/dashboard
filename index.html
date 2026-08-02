@@ -695,7 +695,20 @@
       </div>
     </section>
 
-    <!-- 1. CLOCK -->
+    <!-- 1. CHAT — local, just for you -->
+    <section class="card chat-card" aria-labelledby="chat-title">
+      <h2 id="chat-title">Chat</h2>
+      <div id="chat-messages" class="chat-messages">
+        <span class="chat-msg"><span class="chat-tag">system</span>This is your local chat — messages stay on this browser only.</span>
+      </div>
+      <form id="chat-form" class="chat-form">
+        <label for="chat-input" class="visually-hidden">Message</label>
+        <input id="chat-input" type="text" placeholder="Write yourself a note…" autocomplete="off">
+        <button type="submit">Send</button>
+      </form>
+    </section>
+
+    <!-- 2. CLOCK -->
     <header class="card">
       <time id="clock">--:--:--</time>
       <p id="date"></p>
@@ -763,18 +776,6 @@
       <ul id="music-list" class="music-list"></ul>
     </section>
 
-    <!-- 6. CHAT — local, just for you -->
-    <section class="card chat-card" aria-labelledby="chat-title">
-      <h2 id="chat-title">Chat</h2>
-      <div id="chat-messages" class="chat-messages">
-        <span class="chat-msg"><span class="chat-tag">system</span>This is your local chat — messages stay on this browser only.</span>
-      </div>
-      <form id="chat-form" class="chat-form">
-        <label for="chat-input" class="visually-hidden">Message</label>
-        <input id="chat-input" type="text" placeholder="Write yourself a note…" autocomplete="off">
-        <button type="submit">Send</button>
-      </form>
-    </section>
   </main>
 
 <script>
